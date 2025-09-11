@@ -168,8 +168,10 @@ export class OTLPMetricExporterBase
           console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]       DataPoint ${dpIndex}:`);
           console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Value: ${JSON.stringify(dataPoint.value)}`);
           console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Attributes: ${JSON.stringify(dataPoint.attributes)}`);
-          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Start time: ${new Date(Number(dataPoint.startTime) / 1000000).toISOString()}`);
-          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         End time: ${new Date(Number(dataPoint.endTime) / 1000000).toISOString()}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Start time (raw): ${dataPoint.startTime}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         End time (raw): ${dataPoint.endTime}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Start time (ns): ${Number(dataPoint.startTime)}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         End time (ns): ${Number(dataPoint.endTime)}`);
         });
       });
     });
