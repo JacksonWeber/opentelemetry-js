@@ -56,25 +56,43 @@ export function sendWithHttp(
   };
 
   const req = request(options, (res: http.IncomingMessage) => {
+    console.log(`[OpenTelemetry HTTP-Transport-Utils] Response received - Status: ${res.statusCode} ${res.statusMessage}`);
+    console.log(`[OpenTelemetry HTTP-Transport-Utils] Response headers:`, res.headers);
+    
     const responseData: Buffer[] = [];
-    res.on('data', chunk => responseData.push(chunk));
+    res.on('data', chunk => {
+      console.log(`[OpenTelemetry HTTP-Transport-Utils] Received data chunk: ${chunk.length} bytes`);
+      responseData.push(chunk);
+    });
 
     res.on('end', () => {
+      const responseBody = Buffer.concat(responseData);
+      console.log(`[OpenTelemetry HTTP-Transport-Utils] Response complete - Total size: ${responseBody.length} bytes`);
+      
+      if (responseBody.length > 0) {
+        console.log(`[OpenTelemetry HTTP-Transport-Utils] Response body (first 500 chars): ${responseBody.toString().substring(0, 500)}`);
+      }
+      
       if (res.statusCode && res.statusCode < 299) {
+        console.log('[OpenTelemetry HTTP-Transport-Utils] Export successful');
         onDone({
           status: 'success',
-          data: Buffer.concat(responseData),
+          data: new Uint8Array(responseBody),
         });
       } else if (res.statusCode && isExportRetryable(res.statusCode)) {
+        const retryAfter = parseRetryAfterToMills(res.headers['retry-after']);
+        console.log(`[OpenTelemetry HTTP-Transport-Utils] Export retryable - retry after ${retryAfter}ms`);
         onDone({
           status: 'retryable',
-          retryInMillis: parseRetryAfterToMills(res.headers['retry-after']),
+          retryInMillis: retryAfter,
         });
       } else {
+        const errorBody = responseBody.toString();
+        console.log(`[OpenTelemetry HTTP-Transport-Utils] Export failed - Status: ${res.statusCode}, Body: ${errorBody}`);
         const error = new OTLPExporterError(
           res.statusMessage,
           res.statusCode,
-          Buffer.concat(responseData).toString()
+          errorBody
         );
         onDone({
           status: 'failure',

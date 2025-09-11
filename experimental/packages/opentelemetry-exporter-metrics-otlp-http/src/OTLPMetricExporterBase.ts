@@ -138,6 +138,50 @@ export class OTLPMetricExporterBase
     this._aggregationTemporalitySelector = chooseTemporalitySelector(
       config?.temporalityPreference
     );
+    
+    console.log('[OpenTelemetry OTLP-Metrics-Exporter-Base] Base exporter configured:');
+    console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]   Temporality preference: ${config?.temporalityPreference || 'from environment'}`);
+    console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]   Aggregation preference: ${config?.aggregationPreference ? 'custom' : 'default'}`);
+  }
+
+  override export(
+    metrics: ResourceMetrics,
+    resultCallback: (result: import('@opentelemetry/core').ExportResult) => void
+  ): void {
+    console.log('[OpenTelemetry OTLP-Metrics-Exporter-Base] ===== EXPORTING METRICS =====');
+    console.log('[OpenTelemetry OTLP-Metrics-Exporter-Base] Resource attributes:');
+    console.log(JSON.stringify(metrics.resource.attributes, null, 2));
+    
+    console.log('[OpenTelemetry OTLP-Metrics-Exporter-Base] Scope metrics count:', metrics.scopeMetrics.length);
+    
+    metrics.scopeMetrics.forEach((scopeMetric, scopeIndex) => {
+      console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base] Scope ${scopeIndex}: ${scopeMetric.scope.name}@${scopeMetric.scope.version || 'unknown'}`);
+      console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]   Metrics count: ${scopeMetric.metrics.length}`);
+      
+      scopeMetric.metrics.forEach((metric, metricIndex) => {
+        console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]   Metric ${metricIndex}: ${metric.descriptor.name}`);
+        console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]     Description: ${metric.descriptor.description || 'none'}`);
+        console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]     Unit: ${metric.descriptor.unit || 'none'}`);
+        console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]     Data points: ${metric.dataPoints.length}`);
+        
+        metric.dataPoints.forEach((dataPoint, dpIndex) => {
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]       DataPoint ${dpIndex}:`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Value: ${JSON.stringify(dataPoint.value)}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Attributes: ${JSON.stringify(dataPoint.attributes)}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         Start time: ${new Date(Number(dataPoint.startTime) / 1000000).toISOString()}`);
+          console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base]         End time: ${new Date(Number(dataPoint.endTime) / 1000000).toISOString()}`);
+        });
+      });
+    });
+    
+    console.log('[OpenTelemetry OTLP-Metrics-Exporter-Base] ===== CALLING SUPER.EXPORT =====');
+    super.export(metrics, (result) => {
+      console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base] Export result: ${result.code}`);
+      if (result.error) {
+        console.log(`[OpenTelemetry OTLP-Metrics-Exporter-Base] Export error:`, result.error);
+      }
+      resultCallback(result);
+    });
   }
 
   selectAggregation(instrumentType: InstrumentType): AggregationOption {

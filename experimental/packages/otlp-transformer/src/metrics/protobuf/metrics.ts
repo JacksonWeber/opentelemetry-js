@@ -33,10 +33,37 @@ export const ProtobufMetricsSerializer: ISerializer<
   IExportMetricsServiceResponse
 > = {
   serializeRequest: (arg: ResourceMetrics) => {
+    console.log('[OpenTelemetry OTLP-Transformer Protobuf] ===== SERIALIZING METRICS REQUEST =====');
+    
     const request = createExportMetricsServiceRequest([arg]);
-    return metricsRequestType.encode(request).finish();
+    
+    console.log('[OpenTelemetry OTLP-Transformer Protobuf] OTLP Request Structure:');
+    console.log(JSON.stringify(request, (key, value) => {
+      // Handle BigInt conversion for display
+      if (typeof value === 'bigint') {
+        return value.toString() + 'n';
+      }
+      // Handle Uint8Array conversion for display  
+      if (value instanceof Uint8Array) {
+        return `Uint8Array[${value.length}]`;
+      }
+      return value;
+    }, 2));
+    
+    const encoded = metricsRequestType.encode(request).finish();
+    console.log(`[OpenTelemetry OTLP-Transformer Protobuf] Encoded protobuf size: ${encoded.length} bytes`);
+    
+    return encoded;
   },
   deserializeResponse: (arg: Uint8Array) => {
-    return metricsResponseType.decode(arg);
+    console.log(`[OpenTelemetry OTLP-Transformer Protobuf] ===== DESERIALIZING METRICS RESPONSE =====`);
+    console.log(`[OpenTelemetry OTLP-Transformer Protobuf] Response size: ${arg.length} bytes`);
+    
+    const response = metricsResponseType.decode(arg);
+    
+    console.log('[OpenTelemetry OTLP-Transformer Protobuf] Decoded response:');
+    console.log(JSON.stringify(response, null, 2));
+    
+    return response;
   },
 };

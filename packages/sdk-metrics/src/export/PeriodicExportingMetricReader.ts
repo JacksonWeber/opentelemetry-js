@@ -115,6 +115,8 @@ export class PeriodicExportingMetricReader extends MetricReader {
   }
 
   private async _doRun(): Promise<void> {
+    console.log('[OpenTelemetry PeriodicExportingMetricReader] Starting metrics collection');
+    
     const { resourceMetrics, errors } = await this.collect({
       timeoutMillis: this._exportTimeout,
     });
@@ -124,9 +126,11 @@ export class PeriodicExportingMetricReader extends MetricReader {
         'PeriodicExportingMetricReader: metrics collection errors',
         ...errors
       );
+      console.log('[OpenTelemetry PeriodicExportingMetricReader] Collection errors:', errors);
     }
 
     if (resourceMetrics.resource.asyncAttributesPending) {
+      console.log('[OpenTelemetry PeriodicExportingMetricReader] Waiting for async resource attributes');
       try {
         await resourceMetrics.resource.waitForAsyncAttributes?.();
       } catch (e) {
@@ -136,24 +140,39 @@ export class PeriodicExportingMetricReader extends MetricReader {
     }
 
     if (resourceMetrics.scopeMetrics.length === 0) {
+      console.log('[OpenTelemetry PeriodicExportingMetricReader] No metrics to export');
       return;
     }
 
+    console.log(`[OpenTelemetry PeriodicExportingMetricReader] Collected ${resourceMetrics.scopeMetrics.length} scope metrics, exporting...`);
+
     const result = await internal._export(this._exporter, resourceMetrics);
+    
+    console.log(`[OpenTelemetry PeriodicExportingMetricReader] Export result: ${result.code}`);
+    if (result.error) {
+      console.log(`[OpenTelemetry PeriodicExportingMetricReader] Export error: ${result.error}`);
+    }
+    
     if (result.code !== ExportResultCode.SUCCESS) {
       throw new Error(
         `PeriodicExportingMetricReader: metrics export failed (error ${result.error})`
       );
     }
+    
+    console.log('[OpenTelemetry PeriodicExportingMetricReader] Export completed successfully');
   }
 
   protected override onInitialized(): void {
+    console.log(`[OpenTelemetry PeriodicExportingMetricReader] Initialized with export interval: ${this._exportInterval}ms, timeout: ${this._exportTimeout}ms`);
+    
     // start running the interval as soon as this reader is initialized and keep handle for shutdown.
     this._interval = setInterval(() => {
       // this._runOnce never rejects. Using void operator to suppress @typescript-eslint/no-floating-promises.
       void this._runOnce();
     }, this._exportInterval);
     unrefTimer(this._interval);
+    
+    console.log('[OpenTelemetry PeriodicExportingMetricReader] Periodic export timer started');
   }
 
   protected async onForceFlush(): Promise<void> {

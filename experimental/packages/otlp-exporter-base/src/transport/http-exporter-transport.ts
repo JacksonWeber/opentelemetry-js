@@ -37,6 +37,8 @@ class HttpExporterTransport implements IExporterTransport {
   async send(data: Uint8Array, timeoutMillis: number): Promise<ExportResponse> {
     const { agent, request } = await this._loadUtils();
 
+    console.log(`[OpenTelemetry HTTP-Exporter-Transport] Sending HTTP request to ${this._parameters.url} with timeout ${timeoutMillis}ms`);
+    
     return new Promise<ExportResponse>(resolve => {
       sendWithHttp(
         request,
@@ -44,6 +46,7 @@ class HttpExporterTransport implements IExporterTransport {
         agent,
         data,
         result => {
+          console.log(`[OpenTelemetry HTTP-Exporter-Transport] HTTP request completed with status: ${result.status}`);
           resolve(result);
         },
         timeoutMillis

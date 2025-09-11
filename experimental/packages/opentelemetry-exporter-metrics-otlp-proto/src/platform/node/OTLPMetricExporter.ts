@@ -26,6 +26,15 @@ import {
 
 export class OTLPMetricExporter extends OTLPMetricExporterBase {
   constructor(config?: OTLPExporterNodeConfigBase & OTLPMetricExporterOptions) {
+    console.log('[OpenTelemetry OTLP-Proto-Metrics-Exporter] Initializing OTLP Proto Metrics Exporter');
+    console.log('[OpenTelemetry OTLP-Proto-Metrics-Exporter] Configuration:', JSON.stringify({
+      url: config?.url || 'from environment',
+      timeout: config?.timeoutMillis || 'default',
+      compression: config?.compression || 'none',
+      headers: config?.headers ? Object.keys(config.headers) : 'from environment',
+      concurrencyLimit: config?.concurrencyLimit || 'default'
+    }, null, 2));
+    
     super(
       createOtlpHttpExportDelegate(
         convertLegacyHttpOptions(config ?? {}, 'METRICS', 'v1/metrics', {
@@ -36,5 +45,7 @@ export class OTLPMetricExporter extends OTLPMetricExporterBase {
       ),
       config
     );
+    
+    console.log('[OpenTelemetry OTLP-Proto-Metrics-Exporter] OTLP Proto Metrics Exporter initialized');
   }
 }

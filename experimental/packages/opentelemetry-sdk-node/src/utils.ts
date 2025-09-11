@@ -97,18 +97,23 @@ export function getOtlpProtocolFromEnv(): string {
 
 function getOtlpExporterFromEnv(): SpanExporter {
   const protocol = getOtlpProtocolFromEnv();
+  console.log(`[OpenTelemetry SDK-Node] Creating OTLP trace exporter with protocol: ${protocol}`);
 
   switch (protocol) {
     case 'grpc':
+      console.log('[OpenTelemetry SDK-Node] Creating OTLPGrpcTraceExporter');
       return new OTLPGrpcTraceExporter();
     case 'http/json':
+      console.log('[OpenTelemetry SDK-Node] Creating OTLPHttpTraceExporter');
       return new OTLPHttpTraceExporter();
     case 'http/protobuf':
+      console.log('[OpenTelemetry SDK-Node] Creating OTLPProtoTraceExporter');
       return new OTLPProtoTraceExporter();
     default:
       diag.warn(
         `Unsupported OTLP traces protocol: ${protocol}. Using http/protobuf.`
       );
+      console.log('[OpenTelemetry SDK-Node] Creating default OTLPProtoTraceExporter');
       return new OTLPProtoTraceExporter();
   }
 }

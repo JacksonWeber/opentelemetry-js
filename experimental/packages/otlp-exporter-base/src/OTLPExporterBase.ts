@@ -29,6 +29,7 @@ export class OTLPExporterBase<Internal> {
     items: Internal,
     resultCallback: (result: ExportResult) => void
   ): void {
+    console.log('[OpenTelemetry OTLP-Exporter-Base] Exporting items via OTLP');
     this._delegate.export(items, resultCallback);
   }
 

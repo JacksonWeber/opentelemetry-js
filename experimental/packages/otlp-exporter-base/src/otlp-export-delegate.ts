@@ -56,9 +56,11 @@ class OTLPExportDelegate<Internal, Response>
     resultCallback: (result: ExportResult) => void
   ): void {
     this._diagLogger.debug('items to be sent', internalRepresentation);
+    console.log('[OpenTelemetry OTLP-Export-Delegate] Starting export operation');
 
     // don't do any work if too many exports are in progress.
     if (this._promiseQueue.hasReachedLimit()) {
+      console.log('[OpenTelemetry OTLP-Export-Delegate] Export failed - concurrent limit reached');
       resultCallback({
         code: ExportResultCode.FAILED,
         error: new Error('Concurrent export limit reached'),
@@ -71,6 +73,7 @@ class OTLPExportDelegate<Internal, Response>
     );
 
     if (serializedRequest == null) {
+      console.log('[OpenTelemetry OTLP-Export-Delegate] Export failed - nothing to send');
       resultCallback({
         code: ExportResultCode.FAILED,
         error: new Error('Nothing to send'),
@@ -78,10 +81,12 @@ class OTLPExportDelegate<Internal, Response>
       return;
     }
 
+    console.log('[OpenTelemetry OTLP-Export-Delegate] Sending serialized request via transport');
     this._promiseQueue.pushPromise(
       this._transport.send(serializedRequest, this._timeout).then(
         response => {
           if (response.status === 'success') {
+            console.log('[OpenTelemetry OTLP-Export-Delegate] Export succeeded');
             if (response.data != null) {
               try {
                 this._responseHandler.handleResponse(

@@ -115,7 +115,11 @@ function getValueInMillis(envName: string, defaultValue: number): number {
 function configureMetricProviderFromEnv(): IMetricReader[] {
   const metricReaders: IMetricReader[] = [];
   const enabledExporters = getStringListFromEnv('OTEL_METRICS_EXPORTER');
+  
+  console.log(`[OpenTelemetry SDK-Node] Configuring metrics provider from environment. OTEL_METRICS_EXPORTER: ${enabledExporters?.join(', ') || 'undefined'}`);
+  
   if (!enabledExporters) {
+    console.log('[OpenTelemetry SDK-Node] No metrics exporters configured');
     return metricReaders;
   }
 
@@ -127,6 +131,7 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
     diag.info(
       `OTEL_METRICS_EXPORTER contains "none". Metric provider will not be initialized.`
     );
+    console.log('[OpenTelemetry SDK-Node] Metrics provider initialization disabled (none specified)');
     return metricReaders;
   }
   enabledExporters.forEach(exporter => {
@@ -135,6 +140,8 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
         process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL?.trim() ||
         process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim();
 
+      console.log(`[OpenTelemetry SDK-Node] Creating OTLP metrics exporter with protocol: ${protocol || 'http/protobuf (default)'}`);
+      
       const exportIntervalMillis = getValueInMillis(
         'OTEL_METRIC_EXPORT_INTERVAL',
         60000
@@ -144,8 +151,11 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
         30000
       );
 
+      console.log(`[OpenTelemetry SDK-Node] Metrics export interval: ${exportIntervalMillis}ms, timeout: ${exportTimeoutMillis}ms`);
+
       switch (protocol) {
         case 'grpc':
+          console.log('[OpenTelemetry SDK-Node] Creating OTLPGrpcMetricExporter');
           metricReaders.push(
             new PeriodicExportingMetricReader({
               exporter: new OTLPGrpcMetricExporter(),
@@ -155,6 +165,7 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
           );
           break;
         case 'http/json':
+          console.log('[OpenTelemetry SDK-Node] Creating OTLPHttpMetricExporter');
           metricReaders.push(
             new PeriodicExportingMetricReader({
               exporter: new OTLPHttpMetricExporter(),
@@ -164,6 +175,7 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
           );
           break;
         case 'http/protobuf':
+          console.log('[OpenTelemetry SDK-Node] Creating OTLPProtoMetricExporter');
           metricReaders.push(
             new PeriodicExportingMetricReader({
               exporter: new OTLPProtoMetricExporter(),
@@ -176,6 +188,7 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
           diag.warn(
             `Unsupported OTLP metrics protocol: "${protocol}". Using http/protobuf.`
           );
+          console.log('[OpenTelemetry SDK-Node] Creating default OTLPProtoMetricExporter');
           metricReaders.push(
             new PeriodicExportingMetricReader({
               exporter: new OTLPProtoMetricExporter(),
@@ -185,12 +198,14 @@ function configureMetricProviderFromEnv(): IMetricReader[] {
           );
       }
     } else if (exporter === 'console') {
+      console.log('[OpenTelemetry SDK-Node] Creating ConsoleMetricExporter');
       metricReaders.push(
         new PeriodicExportingMetricReader({
           exporter: new ConsoleMetricExporter(),
         })
       );
     } else if (exporter === 'prometheus') {
+      console.log('[OpenTelemetry SDK-Node] Creating PrometheusMetricExporter');
       metricReaders.push(new PrometheusMetricExporter());
     } else {
       diag.warn(

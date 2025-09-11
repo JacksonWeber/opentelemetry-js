@@ -127,11 +127,18 @@ export function getHttpConfigurationFromEnvironment(
   signalIdentifier: string,
   signalResourcePath: string
 ): Partial<OtlpHttpConfiguration> {
+  const specificUrl = getSpecificUrlFromEnv(signalIdentifier);
+  const nonSpecificUrl = getNonSpecificUrlFromEnv(signalResourcePath);
+  const resolvedUrl = specificUrl ?? nonSpecificUrl;
+  
+  console.log(`[OpenTelemetry OTLP-HTTP-Env-Config] Resolving endpoint for ${signalIdentifier}:`);
+  console.log(`[OpenTelemetry OTLP-HTTP-Env-Config]   Signal-specific URL: ${specificUrl || 'not set'}`);
+  console.log(`[OpenTelemetry OTLP-HTTP-Env-Config]   Non-specific URL + path: ${nonSpecificUrl || 'not set'}`);
+  console.log(`[OpenTelemetry OTLP-HTTP-Env-Config]   Final resolved URL: ${resolvedUrl || 'using default'}`);
+  
   return {
     ...getSharedConfigurationFromEnvironment(signalIdentifier),
-    url:
-      getSpecificUrlFromEnv(signalIdentifier) ??
-      getNonSpecificUrlFromEnv(signalResourcePath),
+    url: resolvedUrl,
     headers: wrapStaticHeadersInFunction(
       getStaticHeadersFromEnv(signalIdentifier)
     ),
