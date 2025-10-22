@@ -22,6 +22,7 @@ import { LogRecordProcessor } from '../LogRecordProcessor';
 import { LogRecordLimits, LoggerConfig, LoggerConfigurator } from '../types';
 import { NoopLogRecordProcessor } from '../export/NoopLogRecordProcessor';
 import { MultiLogRecordProcessor } from '../MultiLogRecordProcessor';
+import { FilteringLogRecordProcessor } from './FilteringLogRecordProcessor';
 
 const DEFAULT_LOGGER_CONFIG: Required<LoggerConfig> = {
   disabled: false,
@@ -50,15 +51,23 @@ export class LoggerProviderSharedState {
     readonly processors: LogRecordProcessor[],
     loggerConfigurator?: LoggerConfigurator
   ) {
-    if (processors.length > 0) {
-      this.registeredLogRecordProcessors = processors;
-      this.activeProcessor = new MultiLogRecordProcessor(
+    this.registeredLogRecordProcessors = processors;
+
+    let delegateProcessor: LogRecordProcessor;
+
+    if (processors.length === 0) {
+      delegateProcessor = new NoopLogRecordProcessor();
+    } else {
+      delegateProcessor = new MultiLogRecordProcessor(
         this.registeredLogRecordProcessors,
         this.forceFlushTimeoutMillis
       );
-    } else {
-      this.activeProcessor = new NoopLogRecordProcessor();
     }
+
+    this.activeProcessor = new FilteringLogRecordProcessor(
+      this,
+      delegateProcessor
+    );
 
     this._loggerConfigurator =
       loggerConfigurator ?? DEFAULT_LOGGER_CONFIGURATOR;
