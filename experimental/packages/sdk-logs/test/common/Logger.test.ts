@@ -20,7 +20,7 @@ import * as sinon from 'sinon';
 import {
   LoggerProvider,
   NoopLogRecordProcessor,
-  createLoggerConfigurator,
+  FilteringLogRecordProcessor,
 } from '../../src';
 import { LogRecordImpl } from '../../src/LogRecordImpl';
 import { ROOT_CONTEXT, TraceFlags, context, trace } from '@opentelemetry/api';
@@ -98,13 +98,12 @@ describe('Logger', () => {
       it('should emit log records with severity above minimum', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { minimumSeverity: SeverityNumber.INFO },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { minimumSeverity: SeverityNumber.INFO }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -125,13 +124,12 @@ describe('Logger', () => {
       it('should drop log records with severity below minimum', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { minimumSeverity: SeverityNumber.WARN },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { minimumSeverity: SeverityNumber.WARN }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -152,13 +150,12 @@ describe('Logger', () => {
       it('should emit log records with severity equal to minimum', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { minimumSeverity: SeverityNumber.WARN },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { minimumSeverity: SeverityNumber.WARN }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -174,13 +171,12 @@ describe('Logger', () => {
       it('should emit log records with unspecified severity (0) regardless of minimum', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { minimumSeverity: SeverityNumber.ERROR },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { minimumSeverity: SeverityNumber.ERROR }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -201,7 +197,11 @@ describe('Logger', () => {
       it('should use default minimum severity of 0 when not configured', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter)
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger(
           'unconfigured-logger'
@@ -221,57 +221,18 @@ describe('Logger', () => {
         assert.strictEqual(logRecords.length, 2);
       });
 
-      it('should only filter logs for configured logger, not other loggers', () => {
-        const exporter = new InMemoryLogRecordExporter();
-        const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'filtered-logger',
-              config: { minimumSeverity: SeverityNumber.ERROR },
-            },
-            {
-              pattern: '*',
-              config: { minimumSeverity: SeverityNumber.UNSPECIFIED },
-            },
-          ]),
-        });
-        const filteredLogger = loggerProvider.getLogger(
-          'filtered-logger'
-        ) as Logger;
-        const unfilteredLogger = loggerProvider.getLogger(
-          'unfiltered-logger'
-        ) as Logger;
-
-        // Should be dropped (below minimum)
-        filteredLogger.emit({
-          body: 'filtered debug',
-          severityNumber: SeverityNumber.DEBUG,
-        });
-
-        // Should be emitted (no filter configured)
-        unfilteredLogger.emit({
-          body: 'unfiltered debug',
-          severityNumber: SeverityNumber.DEBUG,
-        });
-
-        const logRecords = exporter.getFinishedLogRecords();
-        assert.strictEqual(logRecords.length, 1);
-        assert.strictEqual(logRecords[0].body, 'unfiltered debug');
-      });
     });
 
     describe('trace-based filtering', () => {
       it('should emit log records associated with sampled traces', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { traceBased: true },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { traceBased: true }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -294,13 +255,12 @@ describe('Logger', () => {
       it('should drop log records associated with unsampled traces', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { traceBased: true },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { traceBased: true }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -323,13 +283,12 @@ describe('Logger', () => {
       it('should emit log records without trace context when trace-based filtering is enabled', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: { traceBased: true },
-            },
-          ]),
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              { traceBased: true }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 
@@ -368,16 +327,15 @@ describe('Logger', () => {
       it('should combine trace-based and minimum severity filtering', () => {
         const exporter = new InMemoryLogRecordExporter();
         const loggerProvider = new LoggerProvider({
-          processors: [new SimpleLogRecordProcessor(exporter)],
-          loggerConfigurator: createLoggerConfigurator([
-            {
-              pattern: 'test-logger',
-              config: {
+          processors: [
+            new FilteringLogRecordProcessor(
+              new SimpleLogRecordProcessor(exporter),
+              {
                 traceBased: true,
                 minimumSeverity: SeverityNumber.WARN,
-              },
-            },
-          ]),
+              }
+            ),
+          ],
         });
         const logger = loggerProvider.getLogger('test-logger') as Logger;
 

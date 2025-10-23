@@ -16,8 +16,6 @@
 
 export type {
   LoggerProviderConfig,
-  LoggerConfig,
-  LoggerConfigurator,
   LogRecordLimits,
   BufferConfig,
   BatchLogRecordProcessorBrowserConfig,
@@ -33,6 +31,6 @@ export { SimpleLogRecordProcessor } from './export/SimpleLogRecordProcessor';
 export { InMemoryLogRecordExporter } from './export/InMemoryLogRecordExporter';
 export { BatchLogRecordProcessor } from './platform';
 export {
-  createLoggerConfigurator,
-  type LoggerPattern,
-} from './config/LoggerConfigurators';
+  FilteringLogRecordProcessor,
+  type FilteringLogRecordProcessorConfig,
+} from './export/FilteringLogRecordProcessor';

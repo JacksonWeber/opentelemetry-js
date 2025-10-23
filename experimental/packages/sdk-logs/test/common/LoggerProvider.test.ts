@@ -27,7 +27,6 @@ import { loadDefaultConfig } from '../../src/config';
 import { DEFAULT_LOGGER_NAME } from './../../src/LoggerProvider';
 import { MultiLogRecordProcessor } from '../../src/MultiLogRecordProcessor';
 import { Logger } from '../../src/Logger';
-import { FilteringLogRecordProcessor } from '../../src/internal/FilteringLogRecordProcessor';
 
 describe('LoggerProvider', () => {
   beforeEach(() => {
@@ -50,9 +49,7 @@ describe('LoggerProvider', () => {
         const provider = new LoggerProvider();
         const sharedState = provider['_sharedState'];
         const processor = sharedState.activeProcessor;
-        assert.ok(processor instanceof FilteringLogRecordProcessor);
-        const delegate = (processor as any)._delegate;
-        assert.ok(delegate instanceof NoopLogRecordProcessor);
+        assert.ok(processor instanceof NoopLogRecordProcessor);
       });
 
       it('should add logRecord processor', () => {
@@ -61,13 +58,12 @@ describe('LoggerProvider', () => {
           processors: [logRecordProcessor],
         });
         const sharedState = provider['_sharedState'];
-        const activeProcessor = sharedState.activeProcessor;
-        assert.ok(activeProcessor instanceof FilteringLogRecordProcessor);
-        const delegate = (activeProcessor as any)._delegate;
-        assert.ok(delegate instanceof MultiLogRecordProcessor);
-        assert.strictEqual(delegate.processors.length, 1);
+        assert.ok(
+          sharedState.activeProcessor instanceof MultiLogRecordProcessor
+        );
+        assert.strictEqual(sharedState.activeProcessor.processors.length, 1);
         assert.strictEqual(
-          delegate.processors[0],
+          sharedState.activeProcessor.processors[0],
           logRecordProcessor
         );
       });

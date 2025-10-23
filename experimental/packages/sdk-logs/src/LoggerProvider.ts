@@ -37,8 +37,7 @@ export class LoggerProvider implements logsAPI.LoggerProvider {
       resource,
       mergedConfig.forceFlushTimeoutMillis,
       reconfigureLimits(mergedConfig.logRecordLimits),
-      config?.processors ?? [],
-      config?.loggerConfigurator
+      config?.processors ?? []
     );
     this._shutdownOnce = new BindOnceFuture(this._shutdown, this);
   }

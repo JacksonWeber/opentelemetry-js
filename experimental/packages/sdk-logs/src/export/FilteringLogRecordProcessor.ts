@@ -18,17 +18,29 @@ import { Context, TraceFlags, isSpanContextValid, trace } from '@opentelemetry/a
 import { SeverityNumber } from '@opentelemetry/api-logs';
 
 import { LogRecordProcessor } from '../LogRecordProcessor';
-import type { SdkLogRecord } from '../export/SdkLogRecord';
-import { LoggerProviderSharedState } from './LoggerProviderSharedState';
+import type { SdkLogRecord } from './SdkLogRecord';
+
+export interface FilteringLogRecordProcessorConfig {
+  minimumSeverity?: SeverityNumber;
+  traceBased?: boolean;
+}
 
 /**
- * LogRecordProcessor that applies configuration based filtering before delegating.
+ * LogRecordProcessor that applies severity- and trace-based filtering before
+ * delegating to another processor.
  */
 export class FilteringLogRecordProcessor implements LogRecordProcessor {
+  private readonly _minimumSeverity: SeverityNumber;
+  private readonly _traceBased: boolean;
+
   constructor(
-    private readonly _sharedState: LoggerProviderSharedState,
-    private readonly _delegate: LogRecordProcessor
-  ) {}
+    private readonly _delegate: LogRecordProcessor,
+    config: FilteringLogRecordProcessorConfig = {}
+  ) {
+    this._minimumSeverity =
+      config.minimumSeverity ?? SeverityNumber.UNSPECIFIED;
+    this._traceBased = config.traceBased ?? false;
+  }
 
   forceFlush(): Promise<void> {
     return this._delegate.forceFlush();
@@ -39,23 +51,15 @@ export class FilteringLogRecordProcessor implements LogRecordProcessor {
   }
 
   onEmit(logRecord: SdkLogRecord, context?: Context): void {
-    const config = this._sharedState.getLoggerConfig(
-      logRecord.instrumentationScope
-    );
-
-    if (config.disabled) {
-      return;
-    }
-
     const severity = logRecord.severityNumber ?? SeverityNumber.UNSPECIFIED;
     if (
       severity !== SeverityNumber.UNSPECIFIED &&
-      severity < config.minimumSeverity
+      severity < this._minimumSeverity
     ) {
       return;
     }
 
-    if (config.traceBased) {
+    if (this._traceBased) {
       const spanContext =
         logRecord.spanContext ??
         (context ? trace.getSpanContext(context) : undefined);
