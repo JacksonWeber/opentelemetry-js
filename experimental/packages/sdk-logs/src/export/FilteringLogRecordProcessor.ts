@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import { Context, TraceFlags, isSpanContextValid, trace } from '@opentelemetry/api';
+import {
+  Context,
+  TraceFlags,
+  isSpanContextValid,
+  trace,
+} from '@opentelemetry/api';
 import { SeverityNumber } from '@opentelemetry/api-logs';
 
 import { LogRecordProcessor } from '../LogRecordProcessor';

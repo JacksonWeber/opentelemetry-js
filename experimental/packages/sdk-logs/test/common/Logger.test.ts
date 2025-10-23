@@ -220,7 +220,6 @@ describe('Logger', () => {
         const logRecords = exporter.getFinishedLogRecords();
         assert.strictEqual(logRecords.length, 2);
       });
-
     });
 
     describe('trace-based filtering', () => {
