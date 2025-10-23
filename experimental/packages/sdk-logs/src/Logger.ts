@@ -29,7 +29,6 @@ export class Logger implements logsAPI.Logger {
 
   public emit(logRecord: logsAPI.LogRecord): void {
     const currentContext = logRecord.context || context.active();
-
     /**
      * If a Logger was obtained with include_trace_context=true,
      * the LogRecords it emits MUST automatically include the Trace Context from the active Context,
